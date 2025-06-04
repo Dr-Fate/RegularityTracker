@@ -2,6 +2,7 @@ package com.example.regularitytracker
 
 import android.content.Context
 import android.location.Location
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -9,6 +10,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.io.File
+import kotlin.math.abs
 
 class MeasurementViewModel : ViewModel() {
     private var measurementStartTime: Long? = null
@@ -122,4 +125,33 @@ class MeasurementViewModel : ViewModel() {
     fun resumeMeasurement(context: Context) {
         startMeasurement(context)
     }
+    fun exportToCsv(context: Context) {
+        val headers = "Kilómetro,Medido,Ideal,Diferencia"
+        val rows = _splitTimes.value.mapIndexed { index, split ->
+            val ideal = _idealTimes.value.getOrNull(index)
+            val difference = if (ideal != null) split - ideal else null
+
+            val diffFormatted = when {
+                difference == null -> "-"
+                difference == 0L -> "00:00,0"
+                difference > 0L -> "+${formatTime(difference)}"
+                else -> "-${formatTime(abs(difference))}"
+            }
+
+            val splitFormatted = formatTime(split)
+            val idealFormatted = ideal?.let { formatTime(it) } ?: "-"
+
+            "${index + 1},$splitFormatted,$idealFormatted,$diffFormatted"
+        }
+
+        val csvContent = (listOf(headers) + rows).joinToString("\n")
+
+        val filename = "medicion_${System.currentTimeMillis()}.csv"
+        val file = File(context.getExternalFilesDir(null), filename)
+
+        file.writeText(csvContent)
+
+        Toast.makeText(context, "Exportado como $filename", Toast.LENGTH_SHORT).show()
+    }
+
 }

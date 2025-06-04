@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -21,7 +23,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MeasurementScreen(
     satelliteCount: Int,
@@ -69,7 +77,6 @@ fun MeasurementScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(WindowInsets.statusBars.asPaddingValues())
-                .padding(16.dp)
         ) {
             Row(
                 modifier = Modifier
@@ -90,20 +97,47 @@ fun MeasurementScreen(
                     )
                 }
 
-                val gpsQuality = when {
-                    satelliteCount >= 9 -> "GPS: Excelente"
-                    satelliteCount >= 6 -> "GPS: Medio"
-                    satelliteCount >= 1 -> "GPS: Débil"
-                    else -> "Sin señal"
-                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val gpsQuality = when {
+                        satelliteCount >= 9 -> "GPS: Excelente"
+                        satelliteCount >= 6 -> "GPS: Medio"
+                        satelliteCount >= 1 -> "GPS: Débil"
+                        else -> "Sin señal"
+                    }
 
-                Text(
-                    text = gpsQuality,
-                    color = Color.LightGray,
-                    modifier = Modifier
-                        .background(Color(0xFF313131), shape = RoundedCornerShape(16.dp))
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                )
+                    Text(
+                        text = gpsQuality,
+                        color = Color.LightGray,
+                        modifier = Modifier
+                            .background(Color(0xFF313131), shape = RoundedCornerShape(16.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    var expanded by remember { mutableStateOf(false) }
+
+                    IconButton(onClick = { expanded = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Menú",
+                            tint = Color.White
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Exportar a CSV") },
+                            onClick = {
+                                viewModel.exportToCsv(context)
+                                expanded = false
+                            }
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
