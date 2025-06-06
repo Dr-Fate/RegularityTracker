@@ -12,8 +12,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.math.abs
+import android.media.AudioAttributes
+import android.media.SoundPool
 
 class MeasurementViewModel : ViewModel() {
+    private var soundPool: SoundPool? = null
+    private var beepSoundId: Int? = null
+
     private var measurementStartTime: Long? = null
     private var timerJob: Job? = null
     private var locationTracker: LocationTracker? = null
@@ -46,6 +51,18 @@ class MeasurementViewModel : ViewModel() {
     }
 
     fun startMeasurement(context: Context) {
+        soundPool = SoundPool.Builder()
+            .setMaxStreams(1)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
+            .build()
+
+        beepSoundId = soundPool?.load(context, R.raw.beep, 1)
+
         if (_isRunning.value) return  // evitar reinicio si ya está corriendo
         _isRunning.value = true
 
@@ -82,6 +99,9 @@ class MeasurementViewModel : ViewModel() {
 
                         val secondsPerKm = 3600_000.0 / targetSpeedKmh
                         _idealTimes.value = _idealTimes.value + (fullKm * secondsPerKm).toLong()
+                        beepSoundId?.let { id ->
+                            soundPool?.play(id, 1f, 1f, 0, 0, 1f)
+                        }
                     }
                 }
             }
@@ -93,6 +113,9 @@ class MeasurementViewModel : ViewModel() {
         _isRunning.value = false
         timerJob?.cancel()
         locationTracker?.stop()
+        soundPool?.release()
+        soundPool = null
+
     }
 
     fun resetMeasurement(context: Context) {
@@ -125,6 +148,7 @@ class MeasurementViewModel : ViewModel() {
     fun resumeMeasurement(context: Context) {
         startMeasurement(context)
     }
+
     fun exportToCsv(context: Context) {
         val headers = "Kilómetro,Medido,Ideal,Diferencia"
         val rows = _splitTimes.value.mapIndexed { index, split ->
