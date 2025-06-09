@@ -55,8 +55,8 @@ class MeasurementViewModel : ViewModel() {
             .setMaxStreams(1)
             .setAudioAttributes(
                 AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_MEDIA) // 👈 Antes tenías USAGE_ASSISTANCE_SONIFICATION
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     .build()
             )
             .build()
@@ -100,7 +100,8 @@ class MeasurementViewModel : ViewModel() {
                         val secondsPerKm = 3600_000.0 / targetSpeedKmh
                         _idealTimes.value = _idealTimes.value + (fullKm * secondsPerKm).toLong()
                         beepSoundId?.let { id ->
-                            soundPool?.play(id, 1f, 1f, 0, 0, 1f)
+                            val volume = 0.6f // Ajustá esto como prefieras
+                            soundPool?.play(id, volume, volume, 0, 0, 1f)
                         }
                     }
                 }

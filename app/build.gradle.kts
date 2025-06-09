@@ -12,8 +12,8 @@ android {
         applicationId = "com.example.regularitytracker"
         minSdk = 26
         targetSdk = 35
-        versionCode = 32
-        versionName = "2.2"
+        versionCode = 33
+        versionName = "2.2.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
