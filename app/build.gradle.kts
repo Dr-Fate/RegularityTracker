@@ -58,6 +58,9 @@ dependencies {
     // GPS
     implementation("com.google.android.gms:play-services-location:21.3.0")
 
+    // ¡AÑADE ESTA LÍNEA PARA FORZAR LA VERSIÓN DE FRAGMENT!
+    implementation(libs.androidx.fragment.ktx)
+
     // Test
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
