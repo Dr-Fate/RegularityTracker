@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -27,6 +28,8 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import kotlinx.coroutines.launch
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -191,10 +194,39 @@ fun MeasurementScreen(
                 Button(onClick = onAddManualSplit) {
                     Text("Agregar Split")
                 }
-                  */
+                   */
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(40.dp), // altura fija para evitar salto de contenido
+                contentAlignment = Alignment.Center
+            ) {
+                guidanceMessage?.let { message ->
+                    val color = when (message) {
+                        "¡Desacelerar!" -> Color.White
+                        "¡Acelerar!" -> Color.White
+                        "¡Perfecto!" -> Color.White
+                        else -> Color.White
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFF222222), shape = RoundedCornerShape(12.dp))
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = message,
+                            color = color,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Row(
                 modifier = Modifier
@@ -228,7 +260,18 @@ fun MeasurementScreen(
                 )
             }
 
-            LazyColumn {
+            val listState = rememberLazyListState()
+            val coroutineScope = rememberCoroutineScope()
+
+            LaunchedEffect(splits.size) {
+                if (splits.isNotEmpty()) {
+                    coroutineScope.launch {
+                        listState.animateScrollToItem(splits.lastIndex)
+                    }
+                }
+            }
+
+            LazyColumn(state = listState) {
                 itemsIndexed(splits) { index, split ->
                     val km = index + 1
                     val ideal = idealTimes.getOrNull(index)
@@ -273,31 +316,6 @@ fun MeasurementScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            guidanceMessage?.let { message ->
-                val backgroundColor = Color(0xFF222222)
-                val textColor = when (message) {
-                    "¡Desacelerar!" -> Color.White
-                    "¡Acelerar!" -> Color.White
-                    "¡Perfecto!" -> Color.White
-                    else -> Color.White
-                }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp)
-                        .background(backgroundColor, shape = RoundedCornerShape(12.dp))
-                        .padding(vertical = 12.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = message,
-                        color = textColor,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
-            }
 
         }
     }
