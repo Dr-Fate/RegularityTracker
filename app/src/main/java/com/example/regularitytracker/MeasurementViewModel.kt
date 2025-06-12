@@ -14,6 +14,11 @@ import java.io.File
 import kotlin.math.abs
 import android.media.AudioAttributes
 import android.media.SoundPool
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 
 class MeasurementViewModel : ViewModel() {
     private var soundPool: SoundPool? = null
@@ -45,17 +50,23 @@ class MeasurementViewModel : ViewModel() {
     val currentSpeed: Int
         get() = targetSpeedKmh
 
+    // Notificación persistente
+    private val CHANNEL_ID = "twingotime_channel"
+    private val NOTIFICATION_ID = 1
+
     fun setTargetSpeed(speed: Int) {
         targetSpeedKmh = speed
         _idealTimes.value = emptyList()
     }
 
     fun startMeasurement(context: Context) {
+        createNotificationChannel(context)
+
         soundPool = SoundPool.Builder()
             .setMaxStreams(1)
             .setAudioAttributes(
                 AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_MEDIA) // 👈 Antes tenías USAGE_ASSISTANCE_SONIFICATION
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     .build()
             )
@@ -99,9 +110,18 @@ class MeasurementViewModel : ViewModel() {
 
                         val secondsPerKm = 3600_000.0 / targetSpeedKmh
                         _idealTimes.value = _idealTimes.value + (fullKm * secondsPerKm).toLong()
+
+                        // Sonido
                         beepSoundId?.let { id ->
-                            val volume = 0.6f // Ajustá esto como prefieras
+                            val volume = 0.6f
                             soundPool?.play(id, volume, volume, 0, 0, 1f)
+                        }
+
+                        // Notificación
+                        val ideal = _idealTimes.value.lastOrNull()
+                        val diff = if (ideal != null) ideal - currentTime else null
+                        if (diff != null) {
+                            showNotification(context, diff)
                         }
                     }
                 }
@@ -117,6 +137,7 @@ class MeasurementViewModel : ViewModel() {
         soundPool?.release()
         soundPool = null
 
+        cancelNotification()
     }
 
     fun resetMeasurement(context: Context) {
@@ -179,4 +200,49 @@ class MeasurementViewModel : ViewModel() {
         Toast.makeText(context, "Exportado como $filename", Toast.LENGTH_SHORT).show()
     }
 
+    // --------------------------
+    // 🔔 Notificación persistente
+    // --------------------------
+
+    private fun showNotification(context: Context, diff: Long) {
+        val deltaFormatted = formatTime(abs(diff))
+        val guidance = when {
+            diff > 100 -> "¡Desacelerar!"
+            diff < -100 -> "¡Acelerar!"
+            else -> "¡Perfecto!"
+        }
+
+        val contentText = "Tiempo: ${if (diff > 0) "-" else if (diff < 0) "+" else ""}$deltaFormatted"
+        val statusText = "Estado: $guidance"
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher) // Ícono de la app
+            .setContentTitle("TwingoTime! en progreso")
+            .setContentText(contentText)
+            .setStyle(NotificationCompat.BigTextStyle().bigText("$contentText\n$statusText"))
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+
+        with(NotificationManagerCompat.from(context)) {
+            notify(NOTIFICATION_ID, builder.build())
+        }
+    }
+
+    private fun createNotificationChannel(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "TwingoTime Channel"
+            val descriptionText = "Notificación persistente de TwingoTime"
+            val importance = NotificationManager.IMPORTANCE_LOW
+            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+                description = descriptionText
+            }
+            val notificationManager: NotificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun cancelNotification() {
+        NotificationManagerCompat.from(/* context = */ App.instance).cancel(NOTIFICATION_ID)
+    }
 }
