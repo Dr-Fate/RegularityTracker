@@ -1,3 +1,6 @@
+## v2.3.2 - Rebranding
+- Cambia ícono y nombre para vos... pillo.
+
 ## v2.3.1 - Mejora visual menor
 - Agregado un `padding` izquierdo al bloque de "Tiempo total" y "Distancia".
 
