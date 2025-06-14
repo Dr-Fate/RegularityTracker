@@ -28,7 +28,7 @@ fun FakeEditorScreen(onPinValidated: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        Spacer(modifier = Modifier.height(48.dp)) // espacio superior
+        Spacer(modifier = Modifier.height(56.dp)) // espacio superior
         Text("PhotoFilter", color = Color.White, fontSize = 32.sp)
         Spacer(modifier = Modifier.height(16.dp))
         Image(
