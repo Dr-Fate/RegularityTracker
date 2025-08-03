@@ -31,8 +31,8 @@ class LocationTracker(
         if (!isTracking) {
             locationManager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER,
-                2000L, // cada 2 segundos
-                5f,    // al menos 5 metros
+                500L, // cada 0.5 segundos
+                0f,    // al menos 0 metros
                 locationListener
             )
             isTracking = true

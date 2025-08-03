@@ -1,3 +1,5 @@
+// Archivo: MeasurementViewModel.kt
+
 package com.example.regularitytracker
 
 import android.content.Context
@@ -43,14 +45,13 @@ class MeasurementViewModel : ViewModel() {
     private var lastLocation: Location? = null
     private var lastRecordedKm = 0
 
-    private var targetSpeedKmh: Int = 60 // default
+    private var targetSpeedKmh: Int = 60
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning
 
     val currentSpeed: Int
         get() = targetSpeedKmh
 
-    // Notificación persistente
     private val CHANNEL_ID = "twingotime_channel"
     private val NOTIFICATION_ID = 1
 
@@ -74,7 +75,7 @@ class MeasurementViewModel : ViewModel() {
 
         beepSoundId = soundPool?.load(context, R.raw.beep, 1)
 
-        if (_isRunning.value) return  // evitar reinicio si ya está corriendo
+        if (_isRunning.value) return
         _isRunning.value = true
 
         measurementStartTime = System.currentTimeMillis() - _elapsedTime.value
@@ -98,7 +99,7 @@ class MeasurementViewModel : ViewModel() {
                 val distanceDelta = previous.distanceTo(location)
                 val speedKmh = (location.speed * 3.6).toFloat()
 
-                if (distanceDelta > 3f && speedKmh >= 12f) {
+                if (speedKmh >= 1f) { // menor umbral de velocidad para evitar pérdidas
                     val totalDistance = _distanceKm.value + distanceDelta / 1000f
                     _distanceKm.value = totalDistance
 
@@ -111,13 +112,11 @@ class MeasurementViewModel : ViewModel() {
                         val secondsPerKm = 3600_000.0 / targetSpeedKmh
                         _idealTimes.value = _idealTimes.value + (fullKm * secondsPerKm).toLong()
 
-                        // Sonido
                         beepSoundId?.let { id ->
                             val volume = 0.6f
                             soundPool?.play(id, volume, volume, 0, 0, 1f)
                         }
 
-                        // Notificación
                         val ideal = _idealTimes.value.lastOrNull()
                         val diff = if (ideal != null) ideal - currentTime else null
                         if (diff != null) {
@@ -200,10 +199,6 @@ class MeasurementViewModel : ViewModel() {
         Toast.makeText(context, "Exportado como $filename", Toast.LENGTH_SHORT).show()
     }
 
-    // --------------------------
-    // 🔔 Notificación persistente
-    // --------------------------
-
     private fun showNotification(context: Context, diff: Long) {
         val deltaFormatted = formatTime(abs(diff))
         val guidance = when {
@@ -216,7 +211,7 @@ class MeasurementViewModel : ViewModel() {
         val statusText = "Estado: $guidance"
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher) // Ícono de la app
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("TwingoTime! en progreso")
             .setContentText(contentText)
             .setStyle(NotificationCompat.BigTextStyle().bigText("$contentText\n$statusText"))
@@ -224,7 +219,11 @@ class MeasurementViewModel : ViewModel() {
             .setOngoing(true)
 
         with(NotificationManagerCompat.from(context)) {
-            notify(NOTIFICATION_ID, builder.build())
+            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU ||
+                context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build())
+            }
         }
     }
 
@@ -243,6 +242,6 @@ class MeasurementViewModel : ViewModel() {
     }
 
     private fun cancelNotification() {
-        NotificationManagerCompat.from(/* context = */ App.instance).cancel(NOTIFICATION_ID)
+        NotificationManagerCompat.from(App.instance).cancel(NOTIFICATION_ID)
     }
 }
