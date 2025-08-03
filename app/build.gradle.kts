@@ -12,8 +12,8 @@ android {
         applicationId = "com.example.regularitytracker"
         minSdk = 26
         targetSdk = 35
-        versionCode = 36
-        versionName = "2.4.0"
+        versionCode = 38
+        versionName = "2.4.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -46,14 +46,14 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
-    implementation("androidx.compose.ui:ui-text:1.6.0")
+    implementation(libs.androidx.ui.text)
 
     // ✅ Compose BOM y componentes unificados
     implementation(platform(libs.androidx.compose.bom))
-    implementation("androidx.compose.foundation:foundation")
+    implementation(libs.androidx.foundation)
     implementation(libs.androidx.material3)
-    implementation("androidx.compose.material:material-icons-extended")
-    implementation("androidx.navigation:navigation-compose:2.7.5")
+    implementation(libs.androidx.material.icons.extended)
+    implementation("androidx.navigation:navigation-compose:2.9.0")
 
     // GPS
     implementation("com.google.android.gms:play-services-location:21.3.0")
