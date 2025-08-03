@@ -1,3 +1,19 @@
+
+## v2.5.0 - Precisión mejorada en el GPS y control de permisos
+
+- Eliminado el filtro de distancia mínima (`distanceDelta > 3f`) para aumentar la precisión en la medición real de kilómetros recorridos.
+- Reducción del umbral de velocidad mínima para registrar movimiento (antes ≥12 km/h, ahora cualquier valor).
+- Intervalo de actualizaciones de GPS reducido a 0.5 segundos para mejorar la sincronización con la ruta real.
+- Mejora de rendimiento en la lógica de ubicación para evitar retrasos acumulados en la distancia.
+- Se verifica correctamente el permiso `POST_NOTIFICATIONS` en Android 13+ antes de mostrar notificaciones, cumpliendo con nuevas políticas de seguridad.
+
+## v2.4.0 - Notificación persistente y mejoras de experiencia
+
+- Se agrega una notificación persistente con texto actualizado al completar cada kilómetro.
+- Aparece `TwingoTime! en progreso`, con el delta y mensaje de estado.
+- Se oculta la notificación al pausar o reiniciar.
+- Se mantiene el icono y prioridad baja para no interferir.
+- Se implementa canal de notificaciones (`NotificationChannel`) en Android 8+.
 ## v2.3.2 - Rebranding
 - Cambia ícono y nombre para vos... pillo.
 
