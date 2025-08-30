@@ -1,4 +1,4 @@
-## [2.6.0] - 2025-08-30
+## v2.6.0 - 2025-08-30
 ### Mejoras en la precisión de medición
 - 🚀 Implementada **interpolación exacta** para el cruce de cada kilómetro, eliminando el retraso sistemático en la detección.
 - 🛡️ Añadido **filtro de outliers**: se descartan lecturas con velocidad instantánea superior a 160 km/h (valores imposibles para el vehículo).
