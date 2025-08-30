@@ -6,14 +6,14 @@ plugins {
 
 android {
     namespace = "com.example.regularitytracker"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.regularitytracker"
         minSdk = 26
         targetSdk = 35
-        versionCode = 39
-        versionName = "2.5.0"
+        versionCode = 41
+        versionName = "2.6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

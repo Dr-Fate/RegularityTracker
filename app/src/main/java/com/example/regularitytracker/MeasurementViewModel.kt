@@ -1,5 +1,3 @@
-// Archivo: MeasurementViewModel.kt
-
 package com.example.regularitytracker
 
 import android.content.Context
@@ -16,11 +14,6 @@ import java.io.File
 import kotlin.math.abs
 import android.media.AudioAttributes
 import android.media.SoundPool
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.os.Build
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 
 class MeasurementViewModel : ViewModel() {
     private var soundPool: SoundPool? = null
@@ -45,15 +38,12 @@ class MeasurementViewModel : ViewModel() {
     private var lastLocation: Location? = null
     private var lastRecordedKm = 0
 
-    private var targetSpeedKmh: Int = 60
+    private var targetSpeedKmh: Int = 60 // default
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning
 
     val currentSpeed: Int
         get() = targetSpeedKmh
-
-    private val CHANNEL_ID = "twingotime_channel"
-    private val NOTIFICATION_ID = 1
 
     fun setTargetSpeed(speed: Int) {
         targetSpeedKmh = speed
@@ -61,8 +51,6 @@ class MeasurementViewModel : ViewModel() {
     }
 
     fun startMeasurement(context: Context) {
-        createNotificationChannel(context)
-
         soundPool = SoundPool.Builder()
             .setMaxStreams(1)
             .setAudioAttributes(
@@ -75,7 +63,7 @@ class MeasurementViewModel : ViewModel() {
 
         beepSoundId = soundPool?.load(context, R.raw.beep, 1)
 
-        if (_isRunning.value) return
+        if (_isRunning.value) return  // evitar reinicio si ya está corriendo
         _isRunning.value = true
 
         measurementStartTime = System.currentTimeMillis() - _elapsedTime.value
@@ -95,32 +83,39 @@ class MeasurementViewModel : ViewModel() {
             val previous = lastLocation
             lastLocation = location
 
-            if (previous != null) {
-                val distanceDelta = previous.distanceTo(location)
-                val speedKmh = (location.speed * 3.6).toFloat()
+            if (previous != null && measurementStartTime != null) {
+                val distanceDelta = previous.distanceTo(location).toDouble()
+                val timeDelta = (location.time - previous.time).toDouble()
 
-                if (speedKmh >= 1f) { // menor umbral de velocidad para evitar pérdidas
-                    val totalDistance = _distanceKm.value + distanceDelta / 1000f
+                if (timeDelta > 0) {
+                    val instSpeed = (distanceDelta / (timeDelta / 1000.0)) * 3.6 // km/h
+
+                    // 🚨 Filtro de outliers: descartar si pasa de 160 km/h
+                    if (instSpeed > 160) return@LocationTracker
+
+                    val totalDistance = _distanceKm.value + (distanceDelta / 1000.0).toFloat()
+                    val prevDistanceKm = _distanceKm.value.toDouble()
+                    val prevTime = System.currentTimeMillis() - measurementStartTime!!
                     _distanceKm.value = totalDistance
 
                     val fullKm = totalDistance.toInt()
                     if (fullKm > lastRecordedKm) {
+                        // 🚀 Interpolación exacta del cruce de km
+                        val fraction =
+                            (fullKm.toDouble() - prevDistanceKm) / (totalDistance.toDouble() - prevDistanceKm)
+                        val interpolatedTime =
+                            prevTime + ((System.currentTimeMillis() - previous.time) * fraction).toLong()
+
                         lastRecordedKm = fullKm
-                        val currentTime = System.currentTimeMillis() - (measurementStartTime ?: 0L)
-                        _splitTimes.value = _splitTimes.value + currentTime
+                        _splitTimes.value = _splitTimes.value + interpolatedTime
 
                         val secondsPerKm = 3600_000.0 / targetSpeedKmh
                         _idealTimes.value = _idealTimes.value + (fullKm * secondsPerKm).toLong()
 
+                        // Sonido
                         beepSoundId?.let { id ->
                             val volume = 0.6f
                             soundPool?.play(id, volume, volume, 0, 0, 1f)
-                        }
-
-                        val ideal = _idealTimes.value.lastOrNull()
-                        val diff = if (ideal != null) ideal - currentTime else null
-                        if (diff != null) {
-                            showNotification(context, diff)
                         }
                     }
                 }
@@ -135,8 +130,6 @@ class MeasurementViewModel : ViewModel() {
         locationTracker?.stop()
         soundPool?.release()
         soundPool = null
-
-        cancelNotification()
     }
 
     fun resetMeasurement(context: Context) {
@@ -197,51 +190,5 @@ class MeasurementViewModel : ViewModel() {
         file.writeText(csvContent)
 
         Toast.makeText(context, "Exportado como $filename", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun showNotification(context: Context, diff: Long) {
-        val deltaFormatted = formatTime(abs(diff))
-        val guidance = when {
-            diff > 100 -> "¡Desacelerar!"
-            diff < -100 -> "¡Acelerar!"
-            else -> "¡Perfecto!"
-        }
-
-        val contentText = "Tiempo: ${if (diff > 0) "-" else if (diff < 0) "+" else ""}$deltaFormatted"
-        val statusText = "Estado: $guidance"
-
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("TwingoTime! en progreso")
-            .setContentText(contentText)
-            .setStyle(NotificationCompat.BigTextStyle().bigText("$contentText\n$statusText"))
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setOngoing(true)
-
-        with(NotificationManagerCompat.from(context)) {
-            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU ||
-                context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
-            ) {
-                NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build())
-            }
-        }
-    }
-
-    private fun createNotificationChannel(context: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "TwingoTime Channel"
-            val descriptionText = "Notificación persistente de TwingoTime"
-            val importance = NotificationManager.IMPORTANCE_LOW
-            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
-                description = descriptionText
-            }
-            val notificationManager: NotificationManager =
-                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
-
-    private fun cancelNotification() {
-        NotificationManagerCompat.from(App.instance).cancel(NOTIFICATION_ID)
     }
 }
