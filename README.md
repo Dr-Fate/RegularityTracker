@@ -1,3 +1,11 @@
+## [2.6.0] - 2025-08-30
+### Mejoras en la precisión de medición
+- 🚀 Implementada **interpolación exacta** para el cruce de cada kilómetro, eliminando el retraso sistemático en la detección.
+- 🛡️ Añadido **filtro de outliers**: se descartan lecturas con velocidad instantánea superior a 160 km/h (valores imposibles para el vehículo).
+- 🔧 Corregido error de tipos (`Double` vs `Float`) en cálculos de distancia y tiempo.
+- ✅ Se mantiene frecuencia de muestreo del GPS en **500 ms** y sin distancia mínima, priorizando precisión máxima.
+- 🔊 Conservada señal sonora (beep) al registrar un nuevo kilómetro.
+- 📄 Exportación CSV intacta con formato: `Kilómetro, Medido, Ideal, Diferencia`.
 
 ## v2.5.0 - Precisión mejorada en el GPS y control de permisos
 
