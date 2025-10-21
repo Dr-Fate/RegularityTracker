@@ -70,6 +70,7 @@ class MeasurementViewModel : ViewModel() {
         lastRecordedKm = _splitTimes.value.size
         lastLocation = null
 
+        // Cronómetro
         timerJob = viewModelScope.launch {
             while (_isRunning.value) {
                 delay(1000)
@@ -79,6 +80,7 @@ class MeasurementViewModel : ViewModel() {
             }
         }
 
+        // Registro de posiciones GPS
         locationTracker = LocationTracker(context) { location ->
             val previous = lastLocation
             lastLocation = location
@@ -87,40 +89,52 @@ class MeasurementViewModel : ViewModel() {
                 val distanceDelta = previous.distanceTo(location).toDouble()
                 val timeDelta = (location.time - previous.time).toDouble()
 
-                if (timeDelta > 0) {
-                    val instSpeed = (distanceDelta / (timeDelta / 1000.0)) * 3.6 // km/h
+                if (timeDelta <= 0) return@LocationTracker
 
-                    // 🚨 Filtro de outliers: descartar si pasa de 160 km/h
-                    if (instSpeed > 160) return@LocationTracker
+                val instSpeed = (distanceDelta / (timeDelta / 1000.0)) * 3.6 // km/h
 
-                    val totalDistance = _distanceKm.value + (distanceDelta / 1000.0).toFloat()
-                    val prevDistanceKm = _distanceKm.value.toDouble()
-                    val prevTime = System.currentTimeMillis() - measurementStartTime!!
-                    _distanceKm.value = totalDistance
+                // 🧩 Filtros suaves
+                if (instSpeed > 160) return@LocationTracker // muy rápido
+                if (distanceDelta > 200) return@LocationTracker // salto grande
+                if (location.hasAccuracy() && location.accuracy > 25) return@LocationTracker // baja precisión
 
-                    val fullKm = totalDistance.toInt()
-                    if (fullKm > lastRecordedKm) {
-                        // 🚀 Interpolación exacta del cruce de km
-                        val fraction =
-                            (fullKm.toDouble() - prevDistanceKm) / (totalDistance.toDouble() - prevDistanceKm)
-                        val interpolatedTime =
-                            prevTime + ((System.currentTimeMillis() - previous.time) * fraction).toLong()
+                // Distancia acumulada
+                val prevDistanceKm = _distanceKm.value.toDouble()
+                val totalDistance = prevDistanceKm + (distanceDelta / 1000.0)
+                _distanceKm.value = totalDistance.toFloat()
 
-                        lastRecordedKm = fullKm
-                        _splitTimes.value = _splitTimes.value + interpolatedTime
+                val fullKm = totalDistance.toInt()
 
-                        val secondsPerKm = 3600_000.0 / targetSpeedKmh
-                        _idealTimes.value = _idealTimes.value + (fullKm * secondsPerKm).toLong()
+                // 🚀 Cruce de nuevo kilómetro
+                if (fullKm > lastRecordedKm) {
+                    val kmTarget = fullKm.toDouble()
+                    val fraction =
+                        (kmTarget - prevDistanceKm) / (totalDistance - prevDistanceKm)
 
-                        // Sonido
-                        beepSoundId?.let { id ->
-                            val volume = 0.6f
-                            soundPool?.play(id, volume, volume, 0, 0, 1f)
-                        }
+                    val interpolatedTimeMillis =
+                        (previous.time + (timeDelta * fraction)).toLong()
+
+                    val interpElapsed =
+                        (interpolatedTimeMillis - (measurementStartTime ?: 0L))
+
+                    // 🌟 Corrección sistemática de 0,3 s para compensar latencia GPS
+                    val correctedElapsed = interpElapsed - 300
+
+                    lastRecordedKm = fullKm
+                    _splitTimes.value = _splitTimes.value + correctedElapsed
+
+                    val secondsPerKm = 3600_000.0 / targetSpeedKmh
+                    _idealTimes.value = _idealTimes.value + (fullKm * secondsPerKm).toLong()
+
+                    // 🔊 Beep
+                    beepSoundId?.let { id ->
+                        val volume = 0.6f
+                        soundPool?.play(id, volume, volume, 0, 0, 1f)
                     }
                 }
             }
         }
+
         locationTracker?.start()
     }
 
@@ -155,19 +169,15 @@ class MeasurementViewModel : ViewModel() {
         }
     }
 
-    fun pauseMeasurement() {
-        stopMeasurement()
-    }
+    fun pauseMeasurement() = stopMeasurement()
 
-    fun resumeMeasurement(context: Context) {
-        startMeasurement(context)
-    }
+    fun resumeMeasurement(context: Context) = startMeasurement(context)
 
     fun exportToCsv(context: Context) {
         val headers = "Kilómetro,Medido,Ideal,Diferencia"
         val rows = _splitTimes.value.mapIndexed { index, split ->
             val ideal = _idealTimes.value.getOrNull(index)
-            val difference = if (ideal != null) split - ideal else null
+            val difference = ideal?.let { split - it }
 
             val diffFormatted = when {
                 difference == null -> "-"
@@ -183,12 +193,10 @@ class MeasurementViewModel : ViewModel() {
         }
 
         val csvContent = (listOf(headers) + rows).joinToString("\n")
-
         val filename = "medicion_${System.currentTimeMillis()}.csv"
         val file = File(context.getExternalFilesDir(null), filename)
 
         file.writeText(csvContent)
-
         Toast.makeText(context, "Exportado como $filename", Toast.LENGTH_SHORT).show()
     }
 }
