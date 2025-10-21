@@ -95,7 +95,7 @@ class MeasurementViewModel : ViewModel() {
 
                 // 🧩 Filtros suaves
                 if (instSpeed > 160) return@LocationTracker // muy rápido
-                if (distanceDelta > 200) return@LocationTracker // salto grande
+                if (distanceDelta > 70) return@LocationTracker // salto grande
                 if (location.hasAccuracy() && location.accuracy > 25) return@LocationTracker // baja precisión
 
                 // Distancia acumulada
