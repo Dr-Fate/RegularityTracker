@@ -328,7 +328,7 @@ fun formatTime(milliseconds: Long?): String {
     val totalSeconds = milliseconds / 1000
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
-    val tenths = ((milliseconds % 1000) / 100.0).roundToInt()
+    val tenths = ((milliseconds % 1000) / 100.0).toInt()
     return "%02d:%02d,%01d".format(minutes, seconds, tenths)
 }
 
