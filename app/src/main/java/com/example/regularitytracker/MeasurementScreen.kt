@@ -54,6 +54,8 @@ fun MeasurementScreen(
     val time by elapsedTime.collectAsState()
     val distance by distanceKm.collectAsState()
     val splits by splitTimes.collectAsState()
+    val isStabilized by viewModel.isStabilized.collectAsState()
+    val stabilizationProgress by viewModel.stabilizationProgress.collectAsState()
     var guidanceMessage by remember { mutableStateOf<String?>(null) }
 
     // Mensaje por diferencia de tiempos
@@ -188,14 +190,6 @@ fun MeasurementScreen(
                 ) {
                     Text("Reset")
                 }
-
-
-                // ✅ Botón auxiliar de pruebas manuales (comentado)
-                 /*
-                Button(onClick = onAddManualSplit) {
-                    Text("Agregar Split")
-                }
-                   */
             }
             Box(
                 modifier = Modifier
@@ -203,26 +197,42 @@ fun MeasurementScreen(
                     .height(40.dp), // altura fija para evitar salto de contenido
                 contentAlignment = Alignment.Center
             ) {
-                guidanceMessage?.let { message ->
-                    val color = when (message) {
-                        "¡Desacelerar!" -> Color.White
-                        "¡Acelerar!" -> Color.White
-                        "¡Perfecto!" -> Color.White
-                        else -> Color.White
-                    }
-
+                if (!isStabilized) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFF222222), shape = RoundedCornerShape(12.dp))
+                            .background(Color(0xFF8D6E63), shape = RoundedCornerShape(12.dp))
                             .padding(horizontal = 16.dp, vertical = 4.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = message,
-                            color = color,
+                            text = if (stabilizationProgress == 0) "Estabilizando GPS: Esperando movimiento..." else "Estabilizando GPS ($stabilizationProgress/5)...",
+                            color = Color.White,
                             style = MaterialTheme.typography.titleMedium
                         )
+                    }
+                } else {
+                    guidanceMessage?.let { message ->
+                        val color = when (message) {
+                            "¡Desacelerar!" -> Color.White
+                            "¡Acelerar!" -> Color.White
+                            "¡Perfecto!" -> Color.White
+                            else -> Color.White
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFF222222), shape = RoundedCornerShape(12.dp))
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = message,
+                                color = color,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
                     }
                 }
             }
@@ -258,7 +268,7 @@ fun MeasurementScreen(
                     text = "Pasamos..",
                     color = Color.White,
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f)//.padding(end = 8.dp)
+                    modifier = Modifier.weight(1f)
                 )
             }
 

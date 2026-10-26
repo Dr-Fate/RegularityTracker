@@ -45,11 +45,17 @@ class MeasurementViewModel : ViewModel() {
     val currentSpeed: Int
         get() = targetSpeedKmh
 
-    // --- Nueva lógica de estabilización inicial ---
+    // --- Lógica de estabilización inicial ---
     private var consecutiveGoodFixes = 0
-    private val requiredGoodFixes = 3
+    private val requiredGoodFixes = 5
     private val minStableSpeedKmh = 12.0
-    private val maxAccuracyMeters = 25f
+    private val maxAccuracyMeters = 18f
+
+    private val _isStabilized = MutableStateFlow(false)
+    val isStabilized: StateFlow<Boolean> = _isStabilized
+
+    private val _stabilizationProgress = MutableStateFlow(0)
+    val stabilizationProgress: StateFlow<Int> = _stabilizationProgress
 
     fun setTargetSpeed(speed: Int) {
         targetSpeedKmh = speed
@@ -76,6 +82,8 @@ class MeasurementViewModel : ViewModel() {
         lastRecordedKm = _splitTimes.value.size
         lastLocation = null
         consecutiveGoodFixes = 0
+        _isStabilized.value = false
+        _stabilizationProgress.value = 0
 
         // Cronómetro general (solo para mostrar tiempo en pantalla una vez que arranque)
         timerJob = viewModelScope.launch {
@@ -99,12 +107,19 @@ class MeasurementViewModel : ViewModel() {
                     (!location.hasAccuracy() || location.accuracy <= maxAccuracyMeters)
 
             if (measurementStartTime == null) {
-                if (goodFix) consecutiveGoodFixes++ else consecutiveGoodFixes = 0
+                if (goodFix) {
+                    consecutiveGoodFixes++
+                } else {
+                    consecutiveGoodFixes = 0
+                }
+                _stabilizationProgress.value = consecutiveGoodFixes
+
                 if (consecutiveGoodFixes >= requiredGoodFixes) {
                     // ✅ Inicia el conteo real
                     measurementStartTime = System.currentTimeMillis()
                     _distanceKm.value = 0f
                     lastRecordedKm = 0
+                    _isStabilized.value = true
                 }
                 return@LocationTracker
             }
@@ -168,7 +183,7 @@ class MeasurementViewModel : ViewModel() {
         soundPool = null
     }
 
-    fun resetMeasurement(context: Context) {
+    fun resetMeasurement() {
         stopMeasurement()
         _elapsedTime.value = 0L
         _distanceKm.value = 0f
@@ -178,7 +193,8 @@ class MeasurementViewModel : ViewModel() {
         lastRecordedKm = 0
         lastLocation = null
         consecutiveGoodFixes = 0
-        startMeasurement(context)
+        _isStabilized.value = false
+        _stabilizationProgress.value = 0
     }
 
     fun addManualSplit() {
