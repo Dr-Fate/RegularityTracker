@@ -53,7 +53,10 @@ fun AppNavigation(
                 splitTimes = measurementViewModel.splitTimes,
                 idealTimes = idealTimes,
                 onStopClick = { measurementViewModel.pauseMeasurement() },
-                onResetClick = { measurementViewModel.resetMeasurement(context) },
+                onResetClick = {
+                    measurementViewModel.resetMeasurement()
+                    navController.popBackStack(Screen.MainScreen.route, inclusive = false)
+                },
                 onAddManualSplit = { measurementViewModel.addManualSplit() },
                 viewModel = measurementViewModel,
                 context = context
