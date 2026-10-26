@@ -64,7 +64,7 @@ class MeasurementViewModel : ViewModel() {
 
     fun startMeasurement(context: Context) {
         soundPool = SoundPool.Builder()
-            .setMaxStreams(1)
+            .setMaxStreams(3)
             .setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -161,18 +161,39 @@ class MeasurementViewModel : ViewModel() {
                     _splitTimes.value = _splitTimes.value + correctedElapsed
 
                     val secondsPerKm = 3600_000.0 / targetSpeedKmh
-                    _idealTimes.value = _idealTimes.value + (fullKm * secondsPerKm).toLong()
+                    val idealTime = (fullKm * secondsPerKm).toLong()
+                    _idealTimes.value = _idealTimes.value + idealTime
 
-                    // 🔊 Beep
-                    beepSoundId?.let { id ->
-                        val volume = 0.6f
-                        soundPool?.play(id, volume, volume, 0, 0, 1f)
+                    // 🔊 Beeps diferenciados:
+                    // diff = ideal - split
+                    // diff > 100 (tardó menos, o sea split < ideal) -> Rápido/Adelantado -> 2 beeps
+                    // diff < -100 (tardó más, o sea split > ideal) -> Lento/Atrasado -> 3 beeps
+                    // en tolerancia (-100..100) -> Perfecto -> 1 beep
+                    val diff = idealTime - correctedElapsed
+                    val beepCount = when {
+                        diff > 100 -> 2   // ¡Desacelerar!
+                        diff < -100 -> 3  // ¡Acelerar!
+                        else -> 1         // ¡Perfecto!
                     }
+                    playBeeps(beepCount)
                 }
             }
         }
 
         locationTracker?.start()
+    }
+
+    private fun playBeeps(count: Int) {
+        val soundId = beepSoundId ?: return
+        val pool = soundPool ?: return
+        viewModelScope.launch {
+            for (i in 0 until count) {
+                pool.play(soundId, 0.7f, 0.7f, 1, 0, 1f)
+                if (i < count - 1) {
+                    delay(220) // Separación rítmica entre beeps
+                }
+            }
+        }
     }
 
     fun stopMeasurement() {
@@ -204,7 +225,16 @@ class MeasurementViewModel : ViewModel() {
 
             val nextKm = _splitTimes.value.size
             val secondsPerKm = 3600_000.0 / targetSpeedKmh
-            _idealTimes.value = _idealTimes.value + (nextKm * secondsPerKm).toLong()
+            val idealTime = (nextKm * secondsPerKm).toLong()
+            _idealTimes.value = _idealTimes.value + idealTime
+
+            val diff = idealTime - currentTime
+            val beepCount = when {
+                diff > 100 -> 2
+                diff < -100 -> 3
+                else -> 1
+            }
+            playBeeps(beepCount)
         }
     }
 
