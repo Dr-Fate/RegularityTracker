@@ -3,25 +3,21 @@ package com.example.regularitytracker
 import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
-import android.os.Bundle
+import android.os.Looper
+import com.google.android.gms.location.*
 
 class LocationTracker(
     private val context: Context,
     private val onNewLocation: (Location) -> Unit
 ) {
-    private val locationManager =
-        context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    private val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
 
-    private val locationListener = object : LocationListener {
-        override fun onLocationChanged(location: Location) {
-            onNewLocation(location)
+    private val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(result: LocationResult) {
+            result.lastLocation?.let { location ->
+                onNewLocation(location)
+            }
         }
-
-        override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
-        override fun onProviderEnabled(provider: String) {}
-        override fun onProviderDisabled(provider: String) {}
     }
 
     private var isTracking = false
@@ -29,11 +25,18 @@ class LocationTracker(
     @SuppressLint("MissingPermission")
     fun start() {
         if (!isTracking) {
-            locationManager.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER,
-                1000L, // cada 1 segundo
-                0f,    // al menos 0 metros
-                locationListener
+            val locationRequest = LocationRequest.Builder(
+                Priority.PRIORITY_HIGH_ACCURACY,
+                1000L // Intervalo exacto de 1 segundo
+            ).apply {
+                setMinUpdateIntervalMillis(1000L)
+                setWaitForAccurateLocation(true)
+            }.build()
+
+            fusedLocationClient.requestLocationUpdates(
+                locationRequest,
+                locationCallback,
+                Looper.getMainLooper()
             )
             isTracking = true
         }
@@ -41,9 +44,8 @@ class LocationTracker(
 
     fun stop() {
         if (isTracking) {
-            locationManager.removeUpdates(locationListener)
+            fusedLocationClient.removeLocationUpdates(locationCallback)
             isTracking = false
         }
     }
 }
-
