@@ -85,12 +85,13 @@ class MeasurementViewModel : ViewModel() {
         _isStabilized.value = false
         _stabilizationProgress.value = 0
 
-        // Cronómetro general (solo para mostrar tiempo en pantalla una vez que arranque)
+        // Cronómetro general para la pantalla
         timerJob = viewModelScope.launch {
             while (_isRunning.value) {
                 delay(1000)
                 measurementStartTime?.let {
-                    _elapsedTime.value = System.currentTimeMillis() - it
+                    val lastLocTime = lastLocation?.time ?: System.currentTimeMillis()
+                    _elapsedTime.value = (lastLocTime - it).coerceAtLeast(0L)
                 }
             }
         }
@@ -115,8 +116,8 @@ class MeasurementViewModel : ViewModel() {
                 _stabilizationProgress.value = consecutiveGoodFixes
 
                 if (consecutiveGoodFixes >= requiredGoodFixes) {
-                    // ✅ Inicia el conteo real
-                    measurementStartTime = System.currentTimeMillis()
+                    // ✅ Inicia el conteo real usando el reloj GPS atómico
+                    measurementStartTime = location.time
                     _distanceKm.value = 0f
                     lastRecordedKm = 0
                     _isStabilized.value = true
@@ -151,6 +152,7 @@ class MeasurementViewModel : ViewModel() {
                     val interpolatedTimeMillis =
                         (previous.time + (timeDelta * fraction)).toLong()
 
+                    // Ambos tiempos provienen de location.time (reloj atómico GPS)
                     val interpElapsed =
                         (interpolatedTimeMillis - (measurementStartTime ?: 0L))
 
@@ -166,9 +168,6 @@ class MeasurementViewModel : ViewModel() {
 
                     // 🔊 Beeps diferenciados:
                     // diff = ideal - split
-                    // diff > 100 (tardó menos, o sea split < ideal) -> Rápido/Adelantado -> 2 beeps
-                    // diff < -100 (tardó más, o sea split > ideal) -> Lento/Atrasado -> 3 beeps
-                    // en tolerancia (-100..100) -> Perfecto -> 1 beep
                     val diff = idealTime - correctedElapsed
                     val beepCount = when {
                         diff > 100 -> 2   // ¡Desacelerar!
@@ -220,7 +219,7 @@ class MeasurementViewModel : ViewModel() {
 
     fun addManualSplit() {
         measurementStartTime?.let { startTime ->
-            val currentTime = System.currentTimeMillis() - startTime
+            val currentTime = (lastLocation?.time ?: System.currentTimeMillis()) - startTime
             _splitTimes.value = _splitTimes.value + currentTime
 
             val nextKm = _splitTimes.value.size
