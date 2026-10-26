@@ -214,8 +214,8 @@ fun MeasurementScreen(
                 } else {
                     guidanceMessage?.let { message ->
                         val color = when (message) {
-                            "¡Desacelerar!" -> Color.White
-                            "¡Acelerar!" -> Color.White
+                            "¡Desacelerar!" -> Color.Red
+                            "¡Acelerar!" -> Color.Cyan
                             "¡Perfecto!" -> Color.White
                             else -> Color.White
                         }
