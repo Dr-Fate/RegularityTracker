@@ -1,3 +1,45 @@
+## v2.9.6 - 2026-11-02
+### Naranja de alto contraste y blindaje anti-interferencias
+- 🎨 **Color Naranja de alto contraste (`#FFB74D`)**: Reemplazado el color rojo en el cartel `"¡Desacelerar!"` y en las diferencias positivas de la tabla (`+00:0X,X`), logrando óptima legibilidad con luz solar directa o reflejos en el habitáculo.
+- 🛡️ **Dead Reckoning inteligente anti-interferencias**: Eliminado el descarte ciego de fixes (`return`). Si la precisión se degrada (`> 20m`) o hay saltos anómalos (por torres de alta tensión, puentes o túneles de árboles), la odometría continúa calculando el avance exacto mediante la velocidad Doppler/inercial del Pixel 6 y Δt. Mantiene la precisión en centésimas y evita saltos repentinos como el de +2.5s.
+- 📡 **Alerta en vivo de señal**: El indicador superior de GPS cambia a naranja y muestra `GPS: Estimando (interferencia)` durante los tramos con sombra satelital.
+
+## v2.9.5 - 2026-11-02
+### Estabilización extendida y alineación de odometría inicial
+- ⏱️ **Calibración a 8 fixes consecutivos**: Se aumenta a 8 segundos seguidos de vector de velocidad estable a ≥ 20 km/h y precisión ≤ 15 m antes de habilitar la carrera.
+- 🎯 **Alineación exacta del Km 0**: El fix donde se decreta la estabilización se fija inmediatamente como origen espacial (`lastLocation`), sumando los metros reales recorridos entre el fix 8 y el fix 9 sin pérdida de distancia en el odómetro (resolviendo la diferencia arrastrada al Km 1 y Km 2).
+
+## v2.9.4 - 2026-10-26
+### Optimización GNSS L1/L5 y reloj atómico GPS (Pixel 6)
+- 🛰️ **Migración a `FusedLocationProviderClient`**: Activado el uso de la doble frecuencia satelital (L1/L5) del Pixel 6 con `Priority.PRIORITY_HIGH_ACCURACY` y fusión de sensores inerciales de Google para filtrar rebotes (multipath).
+- ⚛️ **Unificación al reloj satelital atómico**: La largada de la medición (`measurementStartTime`) y las interpolaciones de cruce de km se sincronizan con `location.time` (tiempo satelital UTC atómico), eliminando desfasajes entre el reloj del teléfono y el GPS.
+- ⏱️ Tasa de muestreo consolidada en **1 segundo (1 Hz)** para evitar ruido por micro-oscilaciones.
+
+## v2.9.3 - 2026-10-26
+### Beeps diferenciados por rendimiento y coherencia visual
+- 🔊 **Audio-feedback por resultado**:
+  - **1 Beep**: Paso perfecto (dentro del rango de ± 100 ms).
+  - **2 Beeps rítmicos**: Vehículo rápido / adelantado (*"¡Desacelerar!"*).
+  - **3 Beeps rítmicos**: Vehículo lento / atrasado (*"¡Acelerar!"*).
+- 👁️ **Feedback sin desviar la vista**: El piloto puede corregir el ritmo por audio sin necesidad de mirar la pantalla.
+- 🎨 **Coherencia cromática**: El mensaje flotante adopta los mismos colores de la tabla (Blanco para perfecto, Rojo para rápido, Cian para lento).
+
+## v2.9.2 - 2026-10-26
+### Flujo completo de Reset e indicador visual de calibración
+- 🔄 **Reinicio integral con botón Reset**: El botón Reset ahora limpia mediciones, detiene el tracking y regresa a `MainScreen` para reajustar o confirmar la velocidad ideal y esperar señal GPS limpia antes de iniciar un nuevo tramo.
+- 📊 **Feedback visual en vivo de estabilización**: Banner que indica `Estabilizando GPS: Esperando movimiento...` o el progreso numérico de calibración antes de largar el cronómetro.
+- 🎯 Calibración inicial elevada a 5 fixes con precisión ≤ 18 m.
+
+## v2.9.1 - 2025-11-13
+### Delay Start y corrección en formato numérico
+- 🚦 Introducción del modo de **estabilización inicial** ("Delay Start"): el cronómetro y la distancia no inician hasta registrar los primeros fixes de GPS estables con velocidad mínima.
+- 🔢 Corrección en redondeos y formato de visualización de tiempos y décimas de segundo.
+
+## v2.7.0 / v2.8.0 / v2.9.0 - 2025-09 a 2025-10
+### Ajustes de estabilidad y sincronización
+- 🔧 Mantenimiento de estabilidad en la captura de posiciones continuas.
+- 🧹 Limpieza en la gestión de estados y navegación interna.
+  
 ## v2.6.0 - 2025-08-30
 ### Mejoras en la precisión de medición
 - 🚀 Implementada **interpolación exacta** para el cruce de cada kilómetro, eliminando el retraso sistemático en la detección.
