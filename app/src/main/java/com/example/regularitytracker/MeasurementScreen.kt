@@ -56,6 +56,7 @@ fun MeasurementScreen(
     val splits by splitTimes.collectAsState()
     val isStabilized by viewModel.isStabilized.collectAsState()
     val stabilizationProgress by viewModel.stabilizationProgress.collectAsState()
+    val isSignalDegraded by viewModel.isSignalDegraded.collectAsState()
     var guidanceMessage by remember { mutableStateOf<String?>(null) }
 
     // Mensaje por diferencia de tiempos
@@ -103,18 +104,19 @@ fun MeasurementScreen(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val gpsQuality = when {
-                        satelliteCount >= 9 -> "GPS: Excelente"
-                        satelliteCount >= 6 -> "GPS: Medio"
-                        satelliteCount >= 1 -> "GPS: Débil"
-                        else -> "Sin señal"
+                    val (gpsQuality, badgeColor, textColor) = when {
+                        isSignalDegraded -> Triple("GPS: Estimando (interferencia)", Color(0xFF5D4037), Color(0xFFFFB74D))
+                        satelliteCount >= 9 -> Triple("GPS: Excelente", Color(0xFF313131), Color.LightGray)
+                        satelliteCount >= 6 -> Triple("GPS: Medio", Color(0xFF313131), Color.LightGray)
+                        satelliteCount >= 1 -> Triple("GPS: Débil", Color(0xFF313131), Color.LightGray)
+                        else -> Triple("Sin señal", Color(0xFF424242), Color.Gray)
                     }
 
                     Text(
                         text = gpsQuality,
-                        color = Color.LightGray,
+                        color = textColor,
                         modifier = Modifier
-                            .background(Color(0xFF313131), shape = RoundedCornerShape(16.dp))
+                            .background(badgeColor, shape = RoundedCornerShape(16.dp))
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     )
 
