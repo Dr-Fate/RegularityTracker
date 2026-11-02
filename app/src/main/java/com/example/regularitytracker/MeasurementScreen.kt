@@ -206,7 +206,7 @@ fun MeasurementScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if (stabilizationProgress == 0) "Estabilizando GPS: Esperando movimiento..." else "Estabilizando GPS ($stabilizationProgress/5)...",
+                            text = if (stabilizationProgress == 0) "Estabilizando GPS: Esperando movimiento..." else "Estabilizando GPS ($stabilizationProgress/8)...",
                             color = Color.White,
                             style = MaterialTheme.typography.titleMedium
                         )
@@ -214,7 +214,7 @@ fun MeasurementScreen(
                 } else {
                     guidanceMessage?.let { message ->
                         val color = when (message) {
-                            "¡Desacelerar!" -> Color.Red
+                            "¡Desacelerar!" -> Color(0xFFFFB74D) // Naranja claro de alto contraste
                             "¡Acelerar!" -> Color.Cyan
                             "¡Perfecto!" -> Color.White
                             else -> Color.White
@@ -292,7 +292,7 @@ fun MeasurementScreen(
                     val (diffText, diffColor) = when {
                         difference == null -> "-" to Color.Gray
                         difference == 0L -> formatTime(0) to Color.White
-                        difference > 0L -> "+${formatTime(difference)}" to Color.Red
+                        difference > 0L -> "+${formatTime(difference)}" to Color(0xFFFFB74D) // Naranja claro
                         else -> "-${formatTime(abs(difference))}" to Color.Cyan
                     }
 

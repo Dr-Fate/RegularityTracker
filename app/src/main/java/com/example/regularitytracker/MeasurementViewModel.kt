@@ -47,9 +47,9 @@ class MeasurementViewModel : ViewModel() {
 
     // --- Lógica de estabilización inicial ---
     private var consecutiveGoodFixes = 0
-    private val requiredGoodFixes = 5
-    private val minStableSpeedKmh = 12.0
-    private val maxAccuracyMeters = 18f
+    private val requiredGoodFixes = 8
+    private val minStableSpeedKmh = 20.0
+    private val maxAccuracyMeters = 15f
 
     private val _isStabilized = MutableStateFlow(false)
     val isStabilized: StateFlow<Boolean> = _isStabilized
@@ -99,11 +99,10 @@ class MeasurementViewModel : ViewModel() {
         // Registro GPS
         locationTracker = LocationTracker(context) { location ->
             val previous = lastLocation
-            lastLocation = location
 
             val speedKmh = (location.speed * 3.6).toDouble()
 
-            // Filtros de estabilidad y calidad
+            // Filtros de estabilidad y calidad inicial
             val goodFix = speedKmh >= minStableSpeedKmh &&
                     (!location.hasAccuracy() || location.accuracy <= maxAccuracyMeters)
 
@@ -120,23 +119,40 @@ class MeasurementViewModel : ViewModel() {
                     measurementStartTime = location.time
                     _distanceKm.value = 0f
                     lastRecordedKm = 0
+                    lastLocation = location // Este fix exacto es el origen (km 0)
                     _isStabilized.value = true
+                } else {
+                    lastLocation = location
                 }
                 return@LocationTracker
             }
 
-            if (previous != null && measurementStartTime != null) {
-                val distanceDelta = previous.distanceTo(location).toDouble()
+            // Ya en carrera:
+            if (previous != null) {
                 val timeDelta = (location.time - previous.time).toDouble()
-
                 if (timeDelta <= 0) return@LocationTracker
 
-                val instSpeed = (distanceDelta / (timeDelta / 1000.0)) * 3.6
+                val rawDistanceDelta = previous.distanceTo(location).toDouble()
+                val instSpeed = (rawDistanceDelta / (timeDelta / 1000.0)) * 3.6
 
-                // 🧩 Filtros suaves
-                if (instSpeed > 160) return@LocationTracker
-                if (distanceDelta > 200) return@LocationTracker
-                if (location.hasAccuracy() && location.accuracy > 25) return@LocationTracker
+                // Dead reckoning inteligente si hay pérdida o salto anómalo:
+                // Si la precisión se degrada mucho (>20m), salto absurdo (>150m) o velocidad imposible (>160km/h),
+                // estimamos la distancia por velocidad Doppler/inercial del Pixel 6 en vez de perder el paso.
+                val distanceDelta: Double = when {
+                    (location.hasAccuracy() && location.accuracy > 20f) || rawDistanceDelta > 150 || instSpeed > 160 -> {
+                        val reliableSpeedMs = if (location.hasSpeed() && location.speed > 2f) {
+                            location.speed.toDouble()
+                        } else if (previous.hasSpeed() && previous.speed > 2f) {
+                            previous.speed.toDouble()
+                        } else {
+                            targetSpeedKmh / 3.6
+                        }
+                        reliableSpeedMs * (timeDelta / 1000.0)
+                    }
+                    else -> rawDistanceDelta
+                }
+
+                lastLocation = location
 
                 // Distancia acumulada
                 val prevDistanceKm = _distanceKm.value.toDouble()
@@ -176,6 +192,8 @@ class MeasurementViewModel : ViewModel() {
                     }
                     playBeeps(beepCount)
                 }
+            } else {
+                lastLocation = location
             }
         }
 
