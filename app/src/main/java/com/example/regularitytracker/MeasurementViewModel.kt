@@ -57,6 +57,11 @@ class MeasurementViewModel : ViewModel() {
     private val _stabilizationProgress = MutableStateFlow(0)
     val stabilizationProgress: StateFlow<Int> = _stabilizationProgress
 
+    // Estado de señal degradada / advertencia de interferencia
+    private val _isSignalDegraded = MutableStateFlow(false)
+    val isSignalDegraded: StateFlow<Boolean> = _isSignalDegraded
+    private var degradedResetJob: Job? = null
+
     fun setTargetSpeed(speed: Int) {
         targetSpeedKmh = speed
         _idealTimes.value = emptyList()
@@ -84,6 +89,7 @@ class MeasurementViewModel : ViewModel() {
         consecutiveGoodFixes = 0
         _isStabilized.value = false
         _stabilizationProgress.value = 0
+        _isSignalDegraded.value = false
 
         // Cronómetro general para la pantalla
         timerJob = viewModelScope.launch {
@@ -135,21 +141,29 @@ class MeasurementViewModel : ViewModel() {
                 val rawDistanceDelta = previous.distanceTo(location).toDouble()
                 val instSpeed = (rawDistanceDelta / (timeDelta / 1000.0)) * 3.6
 
+                val isBadAccuracy = location.hasAccuracy() && location.accuracy > 20f
+                val isJump = rawDistanceDelta > 150 || instSpeed > 160
+
                 // Dead reckoning inteligente si hay pérdida o salto anómalo:
-                // Si la precisión se degrada mucho (>20m), salto absurdo (>150m) o velocidad imposible (>160km/h),
-                // estimamos la distancia por velocidad Doppler/inercial del Pixel 6 en vez de perder el paso.
-                val distanceDelta: Double = when {
-                    (location.hasAccuracy() && location.accuracy > 20f) || rawDistanceDelta > 150 || instSpeed > 160 -> {
-                        val reliableSpeedMs = if (location.hasSpeed() && location.speed > 2f) {
-                            location.speed.toDouble()
-                        } else if (previous.hasSpeed() && previous.speed > 2f) {
-                            previous.speed.toDouble()
-                        } else {
-                            targetSpeedKmh / 3.6
-                        }
-                        reliableSpeedMs * (timeDelta / 1000.0)
+                val distanceDelta: Double = if (isBadAccuracy || isJump) {
+                    // Activamos advertencia visual en pantalla
+                    _isSignalDegraded.value = true
+                    degradedResetJob?.cancel()
+                    degradedResetJob = viewModelScope.launch {
+                        delay(6000)
+                        _isSignalDegraded.value = false
                     }
-                    else -> rawDistanceDelta
+
+                    val reliableSpeedMs = if (location.hasSpeed() && location.speed > 2f) {
+                        location.speed.toDouble()
+                    } else if (previous.hasSpeed() && previous.speed > 2f) {
+                        previous.speed.toDouble()
+                    } else {
+                        targetSpeedKmh / 3.6
+                    }
+                    reliableSpeedMs * (timeDelta / 1000.0)
+                } else {
+                    rawDistanceDelta
                 }
 
                 lastLocation = location
@@ -219,6 +233,8 @@ class MeasurementViewModel : ViewModel() {
         locationTracker?.stop()
         soundPool?.release()
         soundPool = null
+        degradedResetJob?.cancel()
+        _isSignalDegraded.value = false
     }
 
     fun resetMeasurement() {
@@ -233,6 +249,7 @@ class MeasurementViewModel : ViewModel() {
         consecutiveGoodFixes = 0
         _isStabilized.value = false
         _stabilizationProgress.value = 0
+        _isSignalDegraded.value = false
     }
 
     fun addManualSplit() {
