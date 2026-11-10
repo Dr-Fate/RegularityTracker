@@ -1,6 +1,8 @@
 package com.example.regularitytracker
 
 import android.content.Context
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -58,6 +60,15 @@ fun MeasurementScreen(
     val stabilizationProgress by viewModel.stabilizationProgress.collectAsState()
     val isSignalDegraded by viewModel.isSignalDegraded.collectAsState()
     var guidanceMessage by remember { mutableStateOf<String?>(null) }
+
+    // Selector nativo de archivos (permite elegir carpeta, Google Drive, Descargas, etc.)
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri ->
+        if (uri != null) {
+            viewModel.saveCsvToUri(context, uri)
+        }
+    }
 
     // Mensaje por diferencia de tiempos
     LaunchedEffect(splits.size) {
@@ -137,10 +148,10 @@ fun MeasurementScreen(
                         onDismissRequest = { expanded = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Exportar a CSV") },
+                            text = { Text("Guardar CSV en carpeta...") },
                             onClick = {
-                                viewModel.exportToCsv(context)
                                 expanded = false
+                                createDocumentLauncher.launch(viewModel.suggestCsvFilename())
                             }
                         )
                     }
