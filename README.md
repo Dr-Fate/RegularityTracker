@@ -11,12 +11,13 @@
 ## v2.9.6 - 2026-11-02
 ### Naranja de alto contraste y blindaje anti-interferencias
 - 🎨 **Color Naranja de alto contraste (`#FFB74D`)**: Reemplazado el color rojo en el cartel `"¡Desacelerar!"` y en las diferencias positivas de la tabla (`+00:0X,X`), logrando óptima legibilidad con luz solar directa o reflejos en el habitáculo.
-- 🛡️ **Dead Reckoning inteligente anti-interferencias**: Eliminado el descarte ciego de fixes (`return`). Si la precisión se degrada (`> 20m`) o hay saltos anómalos (por torres de alta tensión, puentes o túneles de árboles), la odometría continúa calculando el avance exacto mediante la velocidad Doppler/inercial del Pixel 6 y $\Delta t$. Mantiene la precisión en centésimas y evita saltos repentinos como el de +2.5s.
+- 🛡️ **Dead Reckoning inteligente anti-interferencias**: Eliminado el descarte ciego de fixes (`return`). Si la precisión se degrada (`> 20m`) o hay saltos anómalos (por torres de alta tensión, puentes o túneles de árboles), la odometría continúa calculando el avance exacto mediante la velocidad Doppler/inercial del Pixel 6 y Δt. Mantiene la precisión en centésimas y evita saltos repentinos como el de +2.5s.
+
 - 📡 **Alerta en vivo de señal**: El indicador superior de GPS cambia a naranja y muestra `GPS: Estimando (interferencia)` durante los tramos con sombra satelital.
 
 ## v2.9.5 - 2026-11-02
 ### Estabilización extendida y alineación de odometría inicial
-- ⏱️ **Calibración a 8 fixes consecutivos**: Se aumenta a 8 segundos seguidos de vector de velocidad estable a $\ge 20$ km/h y precisión $\le 15$ m antes de habilitar la carrera.
+- ⏱️ **Calibración a 8 fixes consecutivos**: Se aumenta a 8 segundos seguidos de vector de velocidad estable a ≥ 20 km/h y precisión ≤ 15 m antes de habilitar la carrera.
 - 🎯 **Alineación exacta del Km 0**: El fix donde se decreta la estabilización se fija inmediatamente como origen espacial (`lastLocation`), sumando los metros reales recorridos entre el fix 8 y el fix 9 sin pérdida de distancia en el odómetro (resolviendo la diferencia arrastrada al Km 1 y Km 2).
 
 ## v2.9.4 - 2026-10-26
@@ -28,7 +29,7 @@
 ## v2.9.3 - 2026-10-26
 ### Beeps diferenciados por rendimiento y coherencia visual
 - 🔊 **Audio-feedback por resultado**:
-  - **1 Beep**: Paso perfecto (dentro del rango de $\pm 100$ ms).
+  - **1 Beep**: Paso perfecto (dentro del rango de ± 100 ms).
   - **2 Beeps rítmicos**: Vehículo rápido / adelantado (*"¡Desacelerar!"*).
   - **3 Beeps rítmicos**: Vehículo lento / atrasado (*"¡Acelerar!"*).
 - 👁️ **Feedback sin desviar la vista**: El piloto puede corregir el ritmo por audio sin necesidad de mirar la pantalla.
@@ -38,7 +39,8 @@
 ### Flujo completo de Reset e indicador visual de calibración
 - 🔄 **Reinicio integral con botón Reset**: El botón Reset ahora limpia mediciones, detiene el tracking y regresa a `MainScreen` para reajustar o confirmar la velocidad ideal y esperar señal GPS limpia antes de iniciar un nuevo tramo.
 - 📊 **Feedback visual en vivo de estabilización**: Banner que indica `Estabilizando GPS: Esperando movimiento...` o el progreso numérico de calibración antes de largar el cronómetro.
-- 🎯 Calibración inicial elevada a 5 fixes con precisión $\le 18$ m.
+- 🎯 Calibración inicial elevada a 5 fixes con precisión ≤ 18 m.
+
 
 ## v2.9.1 - 2025-11-13
 ### Delay Start y corrección en formato numérico
