@@ -2,6 +2,7 @@ package com.example.regularitytracker
 
 import android.content.Context
 import android.location.Location
+import android.net.Uri
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -14,6 +15,9 @@ import java.io.File
 import kotlin.math.abs
 import android.media.AudioAttributes
 import android.media.SoundPool
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MeasurementViewModel : ViewModel() {
     private var soundPool: SoundPool? = null
@@ -197,7 +201,6 @@ class MeasurementViewModel : ViewModel() {
                     _idealTimes.value = _idealTimes.value + idealTime
 
                     // 🔊 Beeps diferenciados:
-                    // diff = ideal - split
                     val diff = idealTime - correctedElapsed
                     val beepCount = when {
                         diff > 100 -> 2   // ¡Desacelerar!
@@ -275,7 +278,7 @@ class MeasurementViewModel : ViewModel() {
     fun pauseMeasurement() = stopMeasurement()
     fun resumeMeasurement(context: Context) = startMeasurement(context)
 
-    fun exportToCsv(context: Context) {
+    fun generateCsvContent(): String {
         val headers = "Kilómetro,Medido,Ideal,Diferencia"
         val rows = _splitTimes.value.mapIndexed { index, split ->
             val ideal = _idealTimes.value.getOrNull(index)
@@ -294,10 +297,35 @@ class MeasurementViewModel : ViewModel() {
             "${index + 1},$splitFormatted,$idealFormatted,$diffFormatted"
         }
 
-        val csvContent = (listOf(headers) + rows).joinToString("\n")
-        val filename = "medicion_${System.currentTimeMillis()}.csv"
-        val file = File(context.getExternalFilesDir(null), filename)
-        file.writeText(csvContent)
-        Toast.makeText(context, "Exportado como $filename", Toast.LENGTH_SHORT).show()
+        return (listOf(headers) + rows).joinToString("\n")
+    }
+
+    fun suggestCsvFilename(): String {
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        return "regularidad_${targetSpeedKmh}kmh_$timestamp.csv"
+    }
+
+    fun saveCsvToUri(context: Context, uri: Uri) {
+        try {
+            val content = generateCsvContent()
+            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                outputStream.write(content.toByteArray(Charsets.UTF_8))
+            }
+            Toast.makeText(context, "Archivo CSV guardado con éxito", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(context, "Error al guardar CSV: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    fun exportToCsvFallback(context: Context) {
+        try {
+            val content = generateCsvContent()
+            val filename = suggestCsvFilename()
+            val file = File(context.getExternalFilesDir(null), filename)
+            file.writeText(content, Charsets.UTF_8)
+            Toast.makeText(context, "Exportado como $filename", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(context, "Error al exportar: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+        }
     }
 }

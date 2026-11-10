@@ -12,8 +12,8 @@ android {
         applicationId = "com.example.regularitytracker"
         minSdk = 26
         targetSdk = 35
-        versionCode = 49
-        versionName = "2.9.6"
+        versionCode = 50
+        versionName = "2.9.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -33,8 +33,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    kotlinOptions {
-        jvmTarget = "11"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        }
     }
 
     buildFeatures {
@@ -48,18 +50,15 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.ui.text)
 
-    // ✅ Compose BOM y componentes unificados
+    // Compose BOM y componentes
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.foundation)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
     implementation("androidx.navigation:navigation-compose:2.9.3")
 
-    // GPS
+    // GPS / Fused Location
     implementation(libs.play.services.location)
-
-    // ¡AÑADE ESTA LÍNEA PARA FORZAR LA VERSIÓN DE FRAGMENT!
-    implementation(libs.androidx.fragment.ktx)
 
     // Test
     testImplementation(libs.junit)

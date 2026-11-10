@@ -1,7 +1,18 @@
+## v2.9.7 - 2026-11-10
+### Selector de carpeta para exportar CSV y optimización de build
+- 📁 **Selector nativo de ubicación para CSV**: La opción del menú ahora abre el explorador de archivos nativo de Android (`ActivityResultContracts.CreateDocument`), permitiendo elegir libremente la carpeta de destino (Descargas, Documentos, Google Drive, SD o cualquier carpeta personalizada) y editar el nombre antes de guardar.
+- 🏷️ Nombre sugerido automático inteligente con fecha, hora y velocidad: `regularidad_{velocidad}kmh_YYYYMMDD_HHMMSS.csv`.
+- 🧹 **Limpieza y modernización de Gradle**:
+  - Eliminada la dependencia en desuso `androidx.fragment.ktx`.
+  - Migrada la configuración `jvmTarget` obsoleta a `kotlin.compilerOptions.jvmTarget.set(JVM_11)`.
+  - Integrada la dependencia `navigation-compose` dentro de `libs.versions.toml`.
+  - Limpieza de imports redundantes en pantallas de Compose.
+
 ## v2.9.6 - 2026-11-02
 ### Naranja de alto contraste y blindaje anti-interferencias
 - 🎨 **Color Naranja de alto contraste (`#FFB74D`)**: Reemplazado el color rojo en el cartel `"¡Desacelerar!"` y en las diferencias positivas de la tabla (`+00:0X,X`), logrando óptima legibilidad con luz solar directa o reflejos en el habitáculo.
 - 🛡️ **Dead Reckoning inteligente anti-interferencias**: Eliminado el descarte ciego de fixes (`return`). Si la precisión se degrada (`> 20m`) o hay saltos anómalos (por torres de alta tensión, puentes o túneles de árboles), la odometría continúa calculando el avance exacto mediante la velocidad Doppler/inercial del Pixel 6 y Δt. Mantiene la precisión en centésimas y evita saltos repentinos como el de +2.5s.
+
 - 📡 **Alerta en vivo de señal**: El indicador superior de GPS cambia a naranja y muestra `GPS: Estimando (interferencia)` durante los tramos con sombra satelital.
 
 ## v2.9.5 - 2026-11-02
@@ -30,6 +41,7 @@
 - 📊 **Feedback visual en vivo de estabilización**: Banner que indica `Estabilizando GPS: Esperando movimiento...` o el progreso numérico de calibración antes de largar el cronómetro.
 - 🎯 Calibración inicial elevada a 5 fixes con precisión ≤ 18 m.
 
+
 ## v2.9.1 - 2025-11-13
 ### Delay Start y corrección en formato numérico
 - 🚦 Introducción del modo de **estabilización inicial** ("Delay Start"): el cronómetro y la distancia no inician hasta registrar los primeros fixes de GPS estables con velocidad mínima.
@@ -39,7 +51,7 @@
 ### Ajustes de estabilidad y sincronización
 - 🔧 Mantenimiento de estabilidad en la captura de posiciones continuas.
 - 🧹 Limpieza en la gestión de estados y navegación interna.
-  
+
 ## v2.6.0 - 2025-08-30
 ### Mejoras en la precisión de medición
 - 🚀 Implementada **interpolación exacta** para el cruce de cada kilómetro, eliminando el retraso sistemático en la detección.

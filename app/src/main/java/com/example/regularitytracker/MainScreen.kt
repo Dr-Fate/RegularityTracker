@@ -1,6 +1,9 @@
 package com.example.regularitytracker
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -13,15 +16,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import androidx.compose.foundation.interaction.*
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.ui.graphics.graphicsLayer
-
 
 @Composable
 fun MainScreen(
@@ -62,7 +61,7 @@ fun MainScreen(
         }
     }
 
-// Repetición controlada para decremento
+    // Repetición controlada para decremento
     LaunchedEffect(downInteraction) {
         downInteraction.interactions.collectLatest { interaction ->
             if (interaction is PressInteraction.Press) {
